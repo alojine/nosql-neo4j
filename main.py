@@ -26,6 +26,11 @@ def get_network_by_name(name):
     network_by_name = db.get_network_by_name(name)
     return jsonify(network_by_name)
 
+@app.route('/networks/shortest-path/<start_network>/<end_network>', methods=['GET'])
+def shortest_path_details(start_network, end_network):
+    path_details = db.get_shortest_path_details(start_network, end_network)
+    return jsonify(path_details)
+
 @app.route('/users', methods=['POST'])
 def create_user():
     user_name = request.json.get('user_name')
@@ -42,8 +47,6 @@ def create_user():
 def get_users_by_network(network_name):
     users = db.get_users_by_network_name(network_name)
     return jsonify(users)
-
-
 
 if __name__ == "__main__":
     db = NetworkDB(URI, USER, PASSWORD)

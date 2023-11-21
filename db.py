@@ -28,17 +28,17 @@ class NetworkDB:
     def get_network_by_name(self, network_name):
         with self.driver.session() as session:
             result = session.run("""
-                MATCH (n:Network {name: $name_param})
-                RETURN n
+                MATCH (network:Network {name: $name_param})
+                RETURN network
             """, name_param = network_name)
             return result.data()
     
     def create_user_and_join_network(self, user_name, user_ip, network_name):
         with self.driver.session() as session:
             result = session.run("""
-                MATCH (n:Network {name: $networkName})
-                CREATE (u:User {name: $userName, ip: $userIP})-[:JOINED]->(n)
-                RETURN u, n
+                MATCH (network:Network {name: $networkName})
+                CREATE (user:User {name: $userName, ip: $userIP})-[:JOINED]->(network)
+                RETURN user, network
             """, userName=str(user_name), userIP=str(user_ip), networkName=str(network_name))
             return list(result.data())
     
@@ -50,3 +50,18 @@ class NetworkDB:
             """
             result = session.run(query, networkName=network_name)
             return result.data()
+    
+    def get_shortest_path_details(self, start_network, end_network):
+        with self.driver.session() as session:
+            query = """
+            MATCH (start:Network {name: $start}), (end:Network {name: $end})
+            MATCH path = shortestPath((start)-[:CONNECTED_TO*]-(end))
+            RETURN 
+                start.name AS start,
+                end.name AS end,
+                [node in nodes(path) | node.name] AS path,
+                length(path) AS length,
+                reduce(totalLatency = 0, r in relationships(path) | totalLatency + r.latency) AS TotalLatency
+            """
+            result = session.run(query, start=start_network, end=end_network)
+            return result.single()
