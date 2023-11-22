@@ -65,3 +65,19 @@ class NetworkDB:
             """
             result = session.run(query, start=start_network, end=end_network)
             return result.single()
+    
+    def get_all_paths_details_between_networks(self, start_network, end_network):
+        with self.driver.session() as session:
+            query = """
+            MATCH (start:Network {name: $start}), (end:Network {name: $end})
+            MATCH paths = allShortestPaths((start)-[:CONNECTED_TO*]-(end))
+            UNWIND nodes(paths) AS nodes_in_path
+            WITH nodes_in_path
+            MATCH (nodes_in_path)-[r:CONNECTED_TO]-(next_node)
+            RETURN 
+                nodes_in_path.name AS node_name,
+                next_node.name AS next_node_name,
+                r.latency AS latency
+            """
+            result = session.run(query, start=start_network, end=end_network)
+            return result.data()
